@@ -1,10 +1,24 @@
 from pathlib import Path
+import sys
 import joblib
-from custom_transformers import GroupedImputerStage, RatioFeatureEngineer
 import numpy as np
 import pandas as pd
 import streamlit as st
 
+# Import custom transformers dari file custom_transformers.py
+import custom_transformers
+from custom_transformers import GroupedImputerStage, RatioFeatureEngineer
+
+# -------------------------------------------------------------
+# FIX: Daftarkan class custom ke __main__ agar joblib bisa unpickle
+# -------------------------------------------------------------
+sys.modules["__main__"].GroupedImputerStage = GroupedImputerStage
+sys.modules["__main__"].RatioFeatureEngineer = RatioFeatureEngineer
+sys.modules["custom_transformers"] = custom_transformers
+
+# -------------------------------------------------------------
+# ACTION RULES MAPPING
+# -------------------------------------------------------------
 # Mapping Rule: (Cluster) -> (flag_utilisasi, flag_pendapatan, flag_skor_kredit) -> (Action Singkat, Action Detail)
 ACTION_RULES = {
     0: {  # CLUSTER 0 — EARLY INTERVENTION
@@ -210,6 +224,9 @@ def load_debitur_dataset():
 # 3. HEADER & NAVIGASI TAB
 # -------------------------------------------------------------
 st.title("🏦 Sistem Analisis Risiko & Segmentasi Debitur Properti")
+st.markdown("""
+Aplikasi evaluasi profil kredit: lakukan **Prediksi Risiko Baru (Probability of Default)** atau **Cari & Tinjau Profil Debitur Eksisting**.
+""")
 st.divider()
 
 # Pembagian Tab Navigasi
@@ -222,7 +239,7 @@ tab_prediksi, tab_detail = st.tabs(
 # TAB 1: FORM PREDIKSI BARU
 # =============================================================
 with tab_prediksi:
-  st.subheader("📋 Input Data Pinjaman")
+  st.subheader("📋 Input Parameter Calon Debitur")
 
   with st.form("debitur_form"):
     col1, col2, col3 = st.columns(3)
@@ -542,7 +559,8 @@ with tab_detail:
           cluster_desc = (
               "Early Intervention" if int(cluster_val) == 0 else "Intensive"
           )
-          st.markdown(f"**📊 Segmentasi:** `Cluster {cluster_val} / {cluster_desc}`")
+          st.markdown(f"**📊 Segmentasi:** `Cluster {cluster_val}`")
+          st.caption(f"Karakteristik: {cluster_desc}")
           st.metric(
               label="⚡ Action Singkat",
               value=action_singkat,
